@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import http.client, urllib.parse, json
-from rango.keys import BING_TRIAL_KEY1
-subscriptionKey = BING_TRIAL_KEY1
+from tango_with_django_project.settings import BING_API_KEY
+
+subscriptionKey = BING_API_KEY
 host = "api.cognitive.microsoft.com"
 path = "/bing/v7.0/search"
 
