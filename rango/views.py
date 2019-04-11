@@ -7,6 +7,7 @@ from datetime import datetime
 # Import the Category model
 from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
+from rango.bing_web_search import run_query
 
 
 def index(request):
@@ -129,7 +130,6 @@ def add_page(request, category_name_slug):
                 page.views = 0
                 page.save()
                 # probably better to use a redirect here.
-                #return category(request, category_name_slug)
                 return HttpResponseRedirect(reverse('rango:category', args=(category_name_slug,)))
         else:
             print(form.errors)
@@ -215,3 +215,16 @@ def user_logout(request):
 def restricted(request):
     return render(request, 'rango/restricted.html')
 
+
+def search(request):
+
+    result_list = []
+
+    if request.method == 'POST':
+        query = request.POST['query'].strip()
+
+        if query:
+            # Run our Bing function to get the results list!
+            result_list = run_query(query)
+
+    return render(request, 'rango/search.html', {'result_list': result_list})

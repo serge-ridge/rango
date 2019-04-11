@@ -37,6 +37,7 @@
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
+                <li><a href="{% url 'rango:search' %}">Search</a></li>
                 <li><a href="{% url 'rango:index' %}">Home</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'rango:restricted' %}">Restricted Page</a></li>
