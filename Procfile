@@ -1,0 +1,1 @@
+web: python manage.py collectstatic --no-input; gunicorn tango_with_django_project.wsgi

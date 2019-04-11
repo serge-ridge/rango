@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Index{% endblock %}
+
+{% block body_block %}
+    <div class="page-header">
+        <h1>Rango says... hello
+            {% if user.is_authenticated %}
+                {{ user.username }}!
+            {% else %}
+                world!
+            {% endif %}
+        </h1>
+    </div>
+
+    <div class="row placeholders">
+        <div class="col-xs-12 col-sm-6 placeholder">
+            <h3>Top 5 Categories</h3>
+            {% if categories %}
+                <ul class="text-left">
+                    {% for category in categories %}
+                        <li>
+                            <a href="{% url 'rango:category'  category.slug %}">
+                            {{ category.name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <strong>There are no categories present.</strong>
+            {% endif %}
+        </div>
+        <div class="col-xs-12 col-sm-6 placeholder">
+            <h3>Pages</h3>
+            {% if pages %}
+                <ul class="text-left">
+                    {% for page in pages %}
+                         <li>
+                             <a href="{{page.url}}">{{ page.title }}</a>
+                         </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <strong>There are no categories present.</strong>
+            {% endif %}
+        </div>
+    </div>
+
+    <p> visits: {{ visits }}</p>
+{% endblock %}
