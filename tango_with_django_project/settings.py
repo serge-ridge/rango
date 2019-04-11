@@ -109,7 +109,7 @@ DATABASES = {
     }
 }
 
-if ENV_ROLE == 'test':
+if ENV_ROLE == 'production':
     import dj_database_url
     DATABASES['default'] = dj_database_url.config()
 
