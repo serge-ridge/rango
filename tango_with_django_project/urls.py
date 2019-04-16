@@ -41,8 +41,6 @@ urlpatterns = [
     path('accounts/users/', views.users, name='users'),
     path('accounts/', include('registration.backends.simple.urls')),
 ]
-# Целесообразно ли использование settings.DEBUG?
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.MEDIA_URL,
+                      document_root=settings.MEDIA_ROOT)
 
