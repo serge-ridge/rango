@@ -21,12 +21,13 @@ from django.conf.urls.static import static
 from registration.backends.simple.views import RegistrationView
 
 from .views import home
+from rango import views
 
 
 # Create a new class that redirects the user to the index page, if successful at logging
 class MyRegistrationView(RegistrationView):
     def get_success_url(self, user):
-        return '/rango/'
+        return '/accounts/add_profile'
 
 
 urlpatterns = [
@@ -34,6 +35,10 @@ urlpatterns = [
     path('', home, name='home'),
     path('rango/', include('rango.urls')),
     path('accounts/register/', MyRegistrationView.as_view(), name='registration_register'),
+    path('accounts/add_profile/', views.register_profile, name='add_profile'),
+    path('accounts/profile/', views.profile, name='profile'),
+    path('accounts/users/<int:user_id>/', views.user_info, name='user_info'),
+    path('accounts/users/', views.users, name='users'),
     path('accounts/', include('registration.backends.simple.urls')),
 ]
 # Целесообразно ли использование settings.DEBUG?

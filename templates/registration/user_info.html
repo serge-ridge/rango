@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ user.name }} profile{% endblock %}
+
+{% block body_block %}
+    {% if user.is_authenticated %}
+        <h1>User {{user.username}} info</h1>
+        Username: {{user.username}}<br/>
+        Email address: {{user.email}}<br/>
+        {% if profile.website %}
+            Website: {{profile.website}}<br/>
+        {% endif%}
+        {% if profile.picture %}
+            <img  height="100" src="{{profile.picture.url}}"
+                  alt="user picture" />
+        {% endif %}
+    {% endif %}
+{% endblock %}

@@ -24,6 +24,7 @@
                         <li>
                             <a href="{% url 'rango:category'  category.slug %}">
                             {{ category.name }}</a>
+                            ({{category.views}} view(s))
                         </li>
                     {% endfor %}
                 </ul>
@@ -38,6 +39,7 @@
                     {% for page in pages %}
                          <li>
                              <a href="{{page.url}}">{{ page.title }}</a>
+                              ({{page.views}} view(s)
                          </li>
                     {% endfor %}
                 </ul>

@@ -1,11 +1,12 @@
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+from django.contrib.auth import login
 # Import the Category model
-from rango.models import Category, Page
+from rango.models import Category, Page, UserProfile, User
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 from rango.bing_web_search import run_query
 
@@ -67,6 +68,9 @@ def category(request, category_name_slug):
         # So the .get() method returns one model instance or raises an exception.
         category = Category.objects.get(slug=category_name_slug)
         context_dict['category_name'] = category.name
+        # Increment count of views for this category
+        category.views += 1
+        category.save()
 
         # Retrieve all of the associated pages.
         # Note that filter returns >= 1 model instance.
@@ -78,6 +82,14 @@ def category(request, category_name_slug):
         # We'll use this in the template to verify that the category exists.
         context_dict['category'] = category
         context_dict['category_name_slug'] = category_name_slug
+        # Snippet for search form and results
+        result_list = []
+        if request.method == 'POST':
+            query = request.POST['query'].strip()
+            if query:
+                # Run our Bing function to get the results list!
+                result_list = run_query(query)
+                context_dict['result_list'] = result_list
     except Category.DoesNotExist:
         # We get here if we didn't find the specified category.
         # Don't do anything - the template displays the "no category" message for us.
@@ -201,6 +213,132 @@ def register(request):
                   )
 
 
+def register_profile(request):
+    # A boolean value for telling the template whether the registration was successful.
+    # Set to False initially. Code changes value to True when registration succeeds.
+    registered = False
+
+    # If it's a HTTP POST, we're interested in processing form data.
+    if request.method == 'POST':
+        profile_form = UserProfileForm(data=request.POST)
+
+        # If the profile form is valid...
+        if profile_form.is_valid():
+            profile = profile_form.save(commit=False)
+            profile.user = request.user
+
+            # Did the user provide a profile picture?
+            # If so, we need to get it from the input form and put it in the UserProfile model.
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+
+            # Now we save the UserProfile model instance.
+            profile.save()
+
+            # Update our variable to tell the template registration was successful.
+            registered = True
+            return HttpResponseRedirect(reverse('rango:index'))
+
+        # Invalid form or forms - mistakes or something else?
+        # Print problems to the terminal.
+        # They'll also be shown to the user.
+        else:
+            print(profile_form.errors)
+
+    # Not a HTTP POST, so we render our form using two ModelForm instances.
+    # These forms will be blank, ready for user input.
+    else:
+        profile_form = UserProfileForm()
+
+    # Render the template depending on the context.
+    return render(request, 'registration/profile_registration.html',
+                  {'profile_form': profile_form,
+                   'registered': registered}
+                  )
+
+
+# Use the login_required() decorator to ensure only those logged in can access the view.
+@login_required
+def profile(request):
+    # If it's a HTTP POST, we're interested in processing form data.
+    if request.method == 'POST':
+        # Attempt to grab information from the raw form information.
+        # Note that we make use of both UserForm and UserProfileForm.
+        user = request.user
+        user_form = UserForm(data=request.POST, instance=user)
+        try:
+            profile = UserProfile.objects.get(user=user)
+            profile_form = UserProfileForm(data=request.POST, instance=profile)
+        except UserProfile.DoesNotExist:
+            profile_form = UserProfileForm(data=request.POST)
+
+        # If the two forms are valid...
+        if user_form.is_valid() and profile_form.is_valid():
+            # Save the user's form data to the database.
+            user = user_form.save()
+
+            # Now we hash the password with the set_password method.
+            # Once hashed, we can update the user object.
+            user.set_password(user.password)
+            user.save()
+
+            # Now sort out the UserProfile instance.
+            # Since we need to set the user attribute ourselves, we set commit=False.
+            # This delays saving the model until we're ready to avoid integrity problems.
+            profile = profile_form.save(commit=False)
+            profile.user = user
+
+            # Did the user provide a profile picture?
+            # If so, we need to get it from the input form and put it in the UserProfile model.
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+
+            # Now we save the UserProfile model instance.
+            profile.save()
+            login(request, user)
+            return HttpResponseRedirect(reverse('rango:index'))
+
+        # Invalid form or forms - mistakes or something else?
+        # Print problems to the terminal.
+        # They'll also be shown to the user.
+        else:
+            print(user_form.errors, profile_form.errors)
+
+    # Not a HTTP POST, so we render our form using two ModelForm instances.
+    # These forms will be blank, ready for user input.
+    else:
+        user = request.user
+        user_form = UserForm(instance=user)
+        try:
+            profile = UserProfile.objects.get(user=user)
+            profile_form = UserProfileForm(instance=profile)
+        except UserProfile.DoesNotExist:
+            profile_form = UserProfileForm()
+    # Render the template depending on the context.
+    return render(request, 'registration/profile.html',
+                  {'user_form': user_form,
+                   'profile_form': profile_form}
+                  )
+
+
+# Use the login_required() decorator to ensure only those logged in can access the view.
+@login_required
+def user_info(request, user_id):
+    if user_id != 0:
+        user = User.objects.get(pk=user_id)
+    else:
+        user = request.user
+    try:
+        profile = UserProfile.objects.get(user=user)
+    except UserProfile.DoesNotExist:
+        profile = {}
+    # Render the template depending on the context.
+    return render(request, 'registration/user_info.html',
+                  {'user': user,
+                   'profile': profile,
+                   'user_id': user_id}
+                  )
+
 # Use the login_required() decorator to ensure only those logged in can access the view.
 @login_required
 def user_logout(request):
@@ -217,14 +355,50 @@ def restricted(request):
 
 
 def search(request):
-
     result_list = []
-
     if request.method == 'POST':
         query = request.POST['query'].strip()
-
         if query:
             # Run our Bing function to get the results list!
             result_list = run_query(query)
-
     return render(request, 'rango/search.html', {'result_list': result_list})
+
+
+def track_url(request):
+    if request.method == 'GET':
+        if 'page_id' in request.GET:
+            page_id = request.GET['page_id']
+            try:
+                # Can we find a page with the given id?
+                # If we can't, the .get() method raises a DoesNotExist exception.
+                # So the .get() method returns one model instance or raises an exception.
+                page = Page.objects.get(id=page_id)
+                # Increment count of views for this category
+                page.views += 1
+                page.save()
+                return HttpResponseRedirect(page.url)
+            except Page.DoesNotExist:
+                # We get here if we didn't find the specified page.
+                # Don't do anything - the template displays the "no page" message for us.
+                pass
+    return HttpResponseRedirect(reverse('rango:index'))
+
+
+@login_required
+def users(request):
+    # Create a context dictionary which we can pass to the template rendering engine.
+    context_dict = {}
+    try:
+        # Retrieve all users.
+        users = User.objects.all()
+
+        # Adds our results list to the template context under name pages.
+        context_dict['users'] = users
+    except User.DoesNotExist:
+        # We get here if we didn't find users.
+        # Don't do anything - the template displays the "no category" message for us.
+        pass
+
+    # Go render the response and return it to the client.
+    return render(request, 'registration/users.html', context_dict)
+
