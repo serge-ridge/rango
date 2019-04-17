@@ -13,4 +13,7 @@ urlpatterns = [
     path('restricted/', views.restricted, name='restricted'),
     path('search/', views.search, name='search'),
     path('goto/', views.track_url, name='goto'),
+    path('like_category/', views.like_category, name='like_category'),
+    path('suggest_category/', views.suggest_category, name='suggest_category'),
+    path('auto_add_page/', views.auto_add_page, name='auto_add_page'),
 ]

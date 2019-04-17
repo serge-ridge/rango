@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.contrib.auth import logout
@@ -61,7 +61,8 @@ def category(request, category_name_slug):
 
     # Create a context dictionary which we can pass to the template rendering engine.
     context_dict = {}
-
+    context_dict['result_list'] = None
+    context_dict['query'] = None
     try:
         # Can we find a category name slug with the given name?
         # If we can't, the .get() method raises a DoesNotExist exception.
@@ -74,7 +75,7 @@ def category(request, category_name_slug):
 
         # Retrieve all of the associated pages.
         # Note that filter returns >= 1 model instance.
-        pages = Page.objects.filter(category=category)
+        pages = Page.objects.filter(category=category).order_by('-views')
 
         # Adds our results list to the template context under name pages.
         context_dict['pages'] = pages
@@ -90,11 +91,13 @@ def category(request, category_name_slug):
                 # Run our Bing function to get the results list!
                 result_list = run_query(query)
                 context_dict['result_list'] = result_list
+                context_dict['query'] = query
     except Category.DoesNotExist:
         # We get here if we didn't find the specified category.
         # Don't do anything - the template displays the "no category" message for us.
         pass
-
+    if not context_dict['query']:
+        context_dict['query'] = category.name
     # Go render the response and return it to the client.
     return render(request, 'rango/category.html', context_dict)
 
@@ -402,3 +405,52 @@ def users(request):
     # Go render the response and return it to the client.
     return render(request, 'registration/users.html', context_dict)
 
+
+@login_required
+def like_category(request):
+    cat_id = None
+    if request.method == 'GET':
+        cat_id = request.GET['category_id']
+    likes = 0
+    if cat_id:
+        cat = Category.objects.get(id=int(cat_id))
+        if cat:
+            likes = cat.likes + 1
+            cat.likes = likes
+            cat.save()
+    return HttpResponse(likes)
+
+
+def get_category_list(max_results=0, starts_with=''):
+    cat_list = []
+    if starts_with:
+        cat_list = Category.objects.filter(name__istartswith=starts_with).order_by('-likes')
+    if cat_list and max_results > 0:
+        if cat_list.count() > max_results:
+            cat_list = cat_list[:max_results]
+    return cat_list
+
+
+def suggest_category(request):
+    starts_with = ''
+    if request.method == 'GET':
+        starts_with = request.GET['suggestion']
+    cat_list = get_category_list(8, starts_with)
+    return render(request, 'rango/cats.html', {'cats': cat_list})
+
+
+@login_required
+def auto_add_page(request):
+    context_dict = {}
+    if request.method == 'GET':
+        cat_id = request.GET['category_id']
+        url = request.GET['url']
+        title = request.GET['title']
+        if cat_id:
+            category = Category.objects.get(id=int(cat_id))
+            p = Page.objects.get_or_create(category=category,
+                                           title=title, url=url)
+            pages = Page.objects.filter(category=category).order_by('-views')
+            # Adds our results list to the template context under name pages.
+            context_dict['pages'] = pages
+    return render(request, 'rango/page_list.html', context_dict)

@@ -5,19 +5,34 @@
 
 {% block body_block %}
     <h1>{{ category_name }}</h1>
-    {% if category %}
-        {% if pages %}
-            <ul>
-                {% for page in pages %}
-                    <li><a href="{% url 'rango:goto' %}?page_id={{page.id}}">
-                        {{ page.title }}</a> ({{page.views}} view(s)</li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <strong>No pages currently in category.</strong><br/>
-        {% endif %}
+    <p>
+        <strong id="like_count">{{ category.likes }}
+        </strong> people like this category
         {% if user.is_authenticated %}
-            <a href="/rango/category/{{category.slug}}/add_page/">Add a Page</a>
+            <button id="likes" data-catid="{{category.id}}"
+                    class="btn btn-primary" type="button">
+                <span class="glyphicon glyphicon-thumbs-up"></span>
+                Like
+            </button>
+        {% endif %}
+    </p>
+    {% if category %}
+        <div id="pages">
+            {% if pages %}
+                <ul>
+                    {% for page in pages %}
+                        <li><a href="{% url 'rango:goto' %}
+                        ?page_id={{page.id}}">{{ page.title }}
+                        </a> ({{page.views}} view(s)</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <strong>No pages currently in category.</strong><br/>
+            {% endif %}
+        </div>
+        {% if user.is_authenticated %}
+            <a href="/rango/category/{{category.slug}}/add_page/">
+                Add a Page</a>
 
             <h3>Search with Rango</h3>
             <div class="row">
@@ -25,8 +40,10 @@
                       action="{% url 'rango:category' category.slug %}">
                     {% csrf_token %}
                     <!-- Display the search form elements here -->
-                    <input class="form-control" type="text" size="50" name="query" value="" id="query" />
-                    <input class="btn btn-primary" type="submit" name="submit" value="Search" />
+                    <input class="form-control" type="text" size="50"
+                           name="query" value="{{query}}" id="query" />
+                    <input class="btn btn-primary" type="submit"
+                           name="submit" value="Search" />
                     <br />
                 </form>
                 {% if result_list %}
@@ -36,6 +53,12 @@
                         {% for result in result_list %}
                             <p>
                                 <a href="{{ result.link }}">{{ result.title }}</a>
+                                <button data-catid="{{category.id}}"
+                                        data-title="{{ result.title }}"
+                                        data-url="{{ result.link }}"
+                                        class="rango-add btn btn-mini btn-info"
+                                        type="button">Add
+                                </button>
                                 <br/>
                                 {{ result.summary }}
                             </p>
