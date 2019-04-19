@@ -21,9 +21,8 @@
             {% if pages %}
                 <ul>
                     {% for page in pages %}
-                        <li><a href="{% url 'rango:goto' %}
-                        ?page_id={{page.id}}">{{ page.title }}
-                        </a> ({{page.views}} view(s)</li>
+                        <li><a href="{% url 'rango:goto' %}?page_id={{page.id}}">
+                            {{ page.title }}</a> ({{page.views}} view(s)</li>
                     {% endfor %}
                 </ul>
             {% else %}

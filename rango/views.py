@@ -9,6 +9,7 @@ from django.contrib.auth import login
 from rango.models import Category, Page, UserProfile, User
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 from rango.bing_web_search import run_query
+from django.utils.timezone import now
 
 
 def index(request):
@@ -378,6 +379,9 @@ def track_url(request):
                 page = Page.objects.get(id=page_id)
                 # Increment count of views for this category
                 page.views += 1
+                if page.first_visit is None:
+                    page.first_visit = now()
+                page.last_visit = now()
                 page.save()
                 return HttpResponseRedirect(page.url)
             except Page.DoesNotExist:
